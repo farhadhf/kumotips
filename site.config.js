@@ -1,10 +1,10 @@
 const CONFIG = {
   // profile setting (required)
   profile: {
-    name: "KumoTips",
+    name: "Farhad Hedayatifard",
     image: "/avatar.svg", // If you want to create your own notion avatar, check out https://notion-avatar.vercel.app
-    role: "By Farhad Hedayatifard",
-    bio: "Tutorials and tips for working with KumoMTA.",
+    role: "Software engineer, founder @AhaSend",
+    bio: "Writing tutorials and tips for working with KumoMTA.",
     email: "hf.farhad@gmail.com",
     linkedin: "fhedayatifard",
     github: "farhadhf",
