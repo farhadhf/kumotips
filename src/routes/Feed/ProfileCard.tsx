@@ -66,6 +66,7 @@ const StyledWrapper = styled.div`
         font-weight: 700;
       }
       .role {
+        text-align: center;
         margin-bottom: 1rem;
         font-size: 0.875rem;
         line-height: 1.25rem;
