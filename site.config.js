@@ -1,7 +1,7 @@
 const CONFIG = {
   // profile setting (required)
   profile: {
-    name: "Kumo Tips",
+    name: "KumoTips",
     image: "/avatar.svg", // If you want to create your own notion avatar, check out https://notion-avatar.vercel.app
     role: "By Farhad Hedayatifard",
     bio: "Tutorials and tips for working with KumoMTA.",
@@ -18,7 +18,7 @@ const CONFIG = {
   ],
   // blog setting (required)
   blog: {
-    title: "Kumo Tips",
+    title: "KumoTips",
     description: "welcome to KumoTips!",
     scheme: "light", // 'light' | 'dark' | 'system'
   },
