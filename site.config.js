@@ -5,7 +5,7 @@ const CONFIG = {
     image: "/avatar.svg", // If you want to create your own notion avatar, check out https://notion-avatar.vercel.app
     role: "Software engineer, founder @AhaSend",
     bio: "Writing tutorials and tips for working with KumoMTA.",
-    email: "hf.farhad@gmail.com",
+    email: "farhad@hedayatifard.com",
     linkedin: "fhedayatifard",
     github: "farhadhf",
     instagram: "",
@@ -62,7 +62,7 @@ const CONFIG = {
     },
   },
   cusdis: {
-    enable: false,
+    enable: true,
     config: {
       host: "https://cusdis.com",
       appid: "", // Embed Code -> data-app-id value
