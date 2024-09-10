@@ -3,7 +3,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { ExtendedRecordMap } from "notion-types"
 import useScheme from "src/hooks/useScheme"
-
+import 'prismjs/components/prism-lua.min.js'
+import 'prismjs/components/prism-toml.min.js'
 // core styles shared by all of react-notion-x (required)
 import "react-notion-x/src/styles.css"
 
