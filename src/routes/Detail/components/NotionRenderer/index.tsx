@@ -3,8 +3,6 @@ import Image from "next/image"
 import Link from "next/link"
 import { ExtendedRecordMap } from "notion-types"
 import useScheme from "src/hooks/useScheme"
-import 'prismjs/components/prism-lua.min.js'
-import 'prismjs/components/prism-toml.min.js'
 // core styles shared by all of react-notion-x (required)
 import "react-notion-x/src/styles.css"
 
@@ -23,7 +21,14 @@ const _NotionRenderer = dynamic(
 )
 
 const Code = dynamic(() =>
-  import("react-notion-x/build/third-party/code").then(async (m) => m.Code)
+  import("react-notion-x/build/third-party/code").then(async (m) => {
+    await Promise.all([
+      import('prismjs/components/prism-lua.min.js'),
+      import('prismjs/components/prism-toml.min.js'),
+      import('prismjs/components/prism-go.min.js'),
+    ])
+    return m.Code as any
+  })
 )
 
 const Collection = dynamic(() =>
