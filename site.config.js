@@ -20,7 +20,7 @@ const CONFIG = {
   blog: {
     title: "KumoTips",
     description: "welcome to KumoTips!",
-    scheme: "light", // 'light' | 'dark' | 'system'
+    scheme: "system", // 'light' | 'dark' | 'system'
   },
 
   // CONFIG configration (required)
