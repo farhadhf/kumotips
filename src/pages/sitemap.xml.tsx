@@ -1,30 +1,70 @@
-import { getPosts } from "../apis/notion-client/getPosts"
-import { CONFIG } from "site.config"
-import { getServerSideSitemap, ISitemapField } from "next-sitemap"
 import { GetServerSideProps } from "next"
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const posts = await getPosts()
-  const dynamicPaths = posts.map((post) => `${CONFIG.link}/${post.slug}`)
+import { getPosts } from "src/apis"
+import {
+  FilterPostsOptions,
+  filterPosts,
+} from "src/libs/utils/notion/filterPosts"
+import { escapeXml, toAbsoluteUrl, toIsoDate } from "src/libs/utils/xml"
+import { TPost } from "src/types"
+import { CONFIG } from "site.config"
 
-  // Create an array of fields, each with a loc and lastmod
-  const fields: ISitemapField[] = dynamicPaths.map((path) => ({
-    loc: path,
-    lastmod: new Date().toISOString(),
-    priority: 0.7,
-    changefreq: "daily",
-  }))
-
-  // Include the site root separately
-  fields.unshift({
-    loc: CONFIG.link,
-    lastmod: new Date().toISOString(),
-    priority: 1.0,
-    changefreq: "daily",
-  })
-
-  return getServerSideSitemap(ctx, fields)
+const sitemapFilter: FilterPostsOptions = {
+  acceptStatus: ["Public", "PublicOnDetail"],
+  acceptType: ["Paper", "Post", "Page"],
 }
 
-// Default export to prevent next.js errors
-export default () => {}
+const postDate = (post: TPost): string =>
+  post.date?.start_date || post.createdTime
+
+const renderUrl = (
+  location: string,
+  lastModified: string | undefined,
+  priority: string
+): string =>
+  [
+    "<url>",
+    `<loc>${escapeXml(location)}</loc>`,
+    lastModified ? `<lastmod>${escapeXml(lastModified)}</lastmod>` : "",
+    "<changefreq>weekly</changefreq>",
+    `<priority>${priority}</priority>`,
+    "</url>",
+  ].join("")
+
+export const getServerSideProps: GetServerSideProps = async ({ res }) => {
+  const posts = filterPosts(await getPosts(), sitemapFilter).filter(
+    (post, index, allPosts) =>
+      allPosts.findIndex((candidate) => candidate.slug === post.slug) === index
+  )
+  const latestPostDate = posts
+    .map((post) => toIsoDate(postDate(post)))
+    .find((date): date is string => Boolean(date))
+
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    renderUrl(toAbsoluteUrl(CONFIG.link), latestPostDate, "1.0"),
+    ...posts.map((post) =>
+      renderUrl(
+        toAbsoluteUrl(CONFIG.link, post.slug),
+        toIsoDate(postDate(post)),
+        "0.7"
+      )
+    ),
+    "</urlset>",
+  ].join("")
+
+  res.setHeader("Content-Type", "application/xml; charset=utf-8")
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=600, stale-while-revalidate=86400"
+  )
+  res.write(xml)
+  res.end()
+
+  return { props: {} }
+}
+
+const Sitemap = () => null
+
+export default Sitemap

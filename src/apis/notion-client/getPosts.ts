@@ -2,7 +2,6 @@ import { CONFIG } from "site.config"
 import { NotionAPI } from "notion-client"
 import { idToUuid } from "notion-utils"
 
-import getAllPageIds from "src/libs/utils/notion/getAllPageIds"
 import getPageProperties from "src/libs/utils/notion/getPageProperties"
 import { TPosts } from "src/types"
 
@@ -15,48 +14,60 @@ export const getPosts = async () => {
   let id = CONFIG.notionConfig.pageId as string
   const api = new NotionAPI()
 
-  const response = await api.getPage(id)
+  const response = (await api.getPageRaw(id)).recordMap
   id = idToUuid(id)
-  const collectionValue = Object.values(response.collection)[0]?.value as any
-  const collection = collectionValue?.value ?? collectionValue
-  const block = response.block
-  const schema = collection?.schema
+  const rootEntry = response.block[id]?.value as any
+  const root = rootEntry?.value ?? rootEntry
 
-  const blockValue = (block[id].value as any)?.value ?? block[id].value
-  const rawMetadata = blockValue
-
-  // Check Type
   if (
-    rawMetadata?.type !== "collection_view_page" &&
-    rawMetadata?.type !== "collection_view"
+    root?.type !== "collection_view_page" &&
+    root?.type !== "collection_view"
   ) {
     return []
-  } else {
-    // Construct Data
-    const pageIds = getAllPageIds(response)
-    const data = []
-    for (let i = 0; i < pageIds.length; i++) {
-      const id = pageIds[i]
-      const properties = (await getPageProperties(id, block, schema)) || null
-      // Add fullwidth, createdtime to properties
-      const pageBlockValue = (block[id].value as any)?.value ?? block[id].value
-      properties.createdTime = new Date(
-        pageBlockValue?.created_time
-      ).toString()
-      properties.fullWidth =
-        (pageBlockValue?.format as any)?.page_full_width ?? false
-
-      data.push(properties)
-    }
-
-    // Sort by date
-    data.sort((a: any, b: any) => {
-      const dateA: any = new Date(a?.date?.start_date || a.createdTime)
-      const dateB: any = new Date(b?.date?.start_date || b.createdTime)
-      return dateB - dateA
-    })
-
-    const posts = data as TPosts
-    return posts
   }
+
+  const collectionId = root.collection_id as string | undefined
+  const viewId = root.view_ids?.[0] as string | undefined
+  if (!collectionId || !viewId) return []
+
+  const collectionEntry = response.collection?.[collectionId]?.value as any
+  const collection = collectionEntry?.value ?? collectionEntry
+  const viewEntry = response.collection_view?.[viewId]?.value as any
+  const view = viewEntry?.value ?? viewEntry
+  if (!collection?.schema || !view) return []
+
+  // notion-client 6.x does not currently unwrap the nested public record-map
+  // values before discovering collection views. Query the discovered view
+  // explicitly so builds do not silently receive an empty collection_query.
+  const collectionData = await api.getCollectionData(collectionId, viewId, view)
+  const block = {
+    ...response.block,
+    ...(collectionData.recordMap?.block ?? {}),
+  }
+  const reducerResults = (collectionData.result as any)?.reducerResults
+  const pageIds = reducerResults?.collection_group_results?.blockIds ?? []
+  const data = []
+
+  for (const pageId of pageIds) {
+    const pageBlockEntry = block[pageId]?.value as any
+    const pageBlock = pageBlockEntry?.value ?? pageBlockEntry
+    if (!pageBlock) continue
+
+    const properties = await getPageProperties(
+      pageId,
+      block,
+      collection.schema
+    )
+    properties.createdTime = new Date(pageBlock.created_time).toString()
+    properties.fullWidth = pageBlock.format?.page_full_width ?? false
+    data.push(properties)
+  }
+
+  data.sort((a: any, b: any) => {
+    const dateA: any = new Date(a?.date?.start_date || a.createdTime)
+    const dateB: any = new Date(b?.date?.start_date || b.createdTime)
+    return dateB - dateA
+  })
+
+  return data as TPosts
 }
